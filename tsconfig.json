@@ -1,0 +1,55 @@
+{
+    "compilerOptions": {
+        // Language and Environment
+        "target": "ES2022", // Matches modern JavaScript features
+        "lib": ["ES2022", "DOM", "DOM.Iterable"], // Include DOM for browser compatibility
+        "module": "ESNext", // Use latest module system
+        "moduleResolution": "bundler", // Modern resolution for bundlers
+
+        // Output Configuration
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true, // Generate .d.ts files
+        "declarationMap": true, // Generate sourcemaps for declarations
+        "sourceMap": true, // Generate sourcemaps
+        "removeComments": false, // Keep JSDoc comments for documentation
+
+        // Interop Constraints
+        "esModuleInterop": true, // Better CommonJS/ESM interop
+        "allowSyntheticDefaultImports": true, // Allow default imports from CommonJS
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true, // Required for build tools like esbuild
+
+        // Type Checking
+        "strict": true, // Enable all strict type checking
+        "noUnusedLocals": true, // Error on unused variables
+        "noUnusedParameters": true, // Error on unused parameters
+        "noFallthroughCasesInSwitch": true, // Require break/return in switch cases
+        "noImplicitReturns": true, // All code paths must return
+        "noUncheckedIndexedAccess": true, // Add undefined to index signatures
+        "exactOptionalPropertyTypes": true, // Distinguish between undefined and missing
+
+        // Module Resolution
+        "resolveJsonModule": true, // Allow importing JSON
+        "allowJs": false, // Pure TypeScript project
+        "skipLibCheck": true, // Skip checking .d.ts files
+
+        // Experimental
+        "experimentalDecorators": false, // Not needed for this project
+        "emitDecoratorMetadata": false,
+
+        // Bundler-Specific (for compatibility with build tools)
+        "verbatimModuleSyntax": true, // Preserve import/export syntax
+        "allowImportingTsExtensions": false, // Don't allow .ts in imports
+
+        // Path Mapping (optional, for cleaner imports)
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"],
+            "@types/*": ["src/types/*"],
+            "@utils/*": ["src/utils/*"]
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.json"],
+    "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "coverage"]
+}
