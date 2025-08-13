@@ -1,4 +1,4 @@
-import { Connection, Keypair, Transaction, SystemProgram, sendAndConfirmTransaction, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, Transaction, SystemProgram, sendAndConfirmTransaction, PublicKey, ComputeBudgetProgram } from '@solana/web3.js';
 
 const payer = Keypair.generate();
 const destination = Keypair.generate();
@@ -13,12 +13,17 @@ async function main() {
 
     await connection.requestAirdrop(payer.publicKey, 2000000000);
     const transaction = new Transaction().add(
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 1000000 }),
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000000 }),
         SystemProgram.transfer({
             fromPubkey: payer.publicKey,
             toPubkey: destination.publicKey,
             lamports: 1000000000,
         }),
     );
+    const blockhash = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash.blockhash;
+    transaction.feePayer = payer.publicKey;
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
     console.log('Signature:', signature);
 }

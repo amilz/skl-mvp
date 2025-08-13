@@ -128,7 +128,7 @@ Check out [demos](./demos) for a comparison of the different SDKs.
 | @solana/kit | 192.89 KB | 118 | 1.00x |
 | Gill | 197.68 KB | 62 | 1.02x |
 | Kit Lite | 218.94 KB | 23 | 1.14x |
-| web3.js | 627.68 KB | 21 | 3.25x |
+| web3.js | 629.37 KB | 26 | 3.26x |
 
 ## Kit Lite vs @solana/kit
 
