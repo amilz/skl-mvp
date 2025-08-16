@@ -1,6 +1,6 @@
 # Bundle Size Comparison Report
 
-Generated on: 2025-08-13
+Generated on: 2025-08-16
 
 Each demo is a self-contained example of using the SDK (Gill, Kit Lite, and @solana/kit). Each demo generates a couple of KeyPairSigners, performs an airdrop, and transfers SOL between them. The demos are built to generate a bundle size comparison report using [compare-bundles.js](./demos/compare-bundles.js).
 Check out [demos](./demos) for a comparison of the different SDKs. 
@@ -11,6 +11,7 @@ Check out [demos](./demos) for a comparison of the different SDKs.
 | @solana/kit | 192.89 KB | 118 | 1.00x |
 | Gill | 197.68 KB | 62 | 1.02x |
 | Kit Lite | 218.94 KB | 23 | 1.14x |
+| Kite | 313.97 KB | 24 | 1.63x |
 | web3.js | 629.37 KB | 26 | 3.26x |
 
 ## Kit Lite vs @solana/kit

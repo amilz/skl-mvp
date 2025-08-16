@@ -12,6 +12,7 @@ const DEMOS = [
     { name: '@solana/kit', dir: 'kit-raw-demo', file: 'kit-raw-demo.js', emoji: '📦' },
     { name: 'Gill', dir: 'gill-demo', file: 'gill-demo.js', emoji: '🐟' },
     { name: 'web3.js', dir: 'web3js-demo', file: 'web3js-demo.js', emoji: '🌐' },
+    { name: 'Kite', dir: 'kite-demo', file: 'kite-demo.js', emoji: '🐳' },
     // TODO Add more demos here as needed:
 ];
 

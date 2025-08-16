@@ -28,6 +28,13 @@ pnpm build
 echo "✅ Web3JS Demo built"
 echo ""
 
+echo "🔨 Building Kite Demo..."
+cd ../kite-demo
+pnpm install
+pnpm build
+echo "✅ Kite Demo built"
+echo ""
+
 cd ..
 echo "📊 Comparing bundle sizes..."
 node compare-bundles.js

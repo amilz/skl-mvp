@@ -1,0 +1,17 @@
+{
+    "name": "kit-lite-demo",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@types/node": "^24.2.1",
+        "typescript": "^5.9.2",
+        "vite": "^7.1.2"
+    },
+    "dependencies": {
+        "@solana/kit": "^2.3.0",
+        "solana-kite": "^1.5.4"
+    }
+}
