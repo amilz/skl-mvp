@@ -8,7 +8,7 @@
  * - All the Phase 1 functionality
  */
 
-import { Connection, TransactionBuilder, Keypair } from '../src';
+import { createConnection, generateKeypair } from '../src';
 import { getTransferSolInstruction } from '@solana-program/system';
 
 const LOCALHOST_ENDPOINT = 'http://127.0.0.1:8899';
@@ -18,7 +18,7 @@ async function main() {
     console.log('🚀 Kit Lite Demo - Final API Design\n');
 
     // Create connection to localhost
-    const connection = new Connection(LOCALHOST_ENDPOINT);
+    const connection = createConnection(LOCALHOST_ENDPOINT);
     console.log('✅ Connected to localhost (Solana test validator)\n');
 
     // ========================================
@@ -49,10 +49,10 @@ async function main() {
     console.log('=== Keypair Creation ===\n');
 
     // Create keypairs for demo
-    const payerSigner = await Keypair.generate();
+    const payerSigner = await generateKeypair();
     console.log('Payer address:', payerSigner.address);
 
-    const recipientSigner = await Keypair.generate();
+    const recipientSigner = await generateKeypair();
     console.log('Recipient address:', recipientSigner.address, '\n');
 
     // ========================================
@@ -90,11 +90,11 @@ async function main() {
     console.log('=== Account Info Demo ===\n');
 
     const accountInfo = await connection.getAccountInfo(payerSigner.address, { commitment: COMMITMENT });
-    if (accountInfo.value) {
+    if (accountInfo) {
         console.log('Account details:');
-        console.log('  Lamports:', Number(accountInfo.value.lamports));
-        console.log('  Owner:', accountInfo.value.owner);
-        console.log('  Executable:', accountInfo.value.executable, '\n');
+        console.log('  Lamports:', Number(accountInfo.lamports));
+        console.log('  Owner:', accountInfo.owner);
+        console.log('  Executable:', accountInfo.executable, '\n');
     }
 
     // ========================================
@@ -114,148 +114,126 @@ async function main() {
     console.log('Building simple transaction...');
 
     try {
-        const signature1 = await TransactionBuilder.create(connection, {
+        const signature1 = await connection.createTransaction({
             feePayer: payerSigner,
         })
             .add(transferInstruction)
-            .prepareAndSendAndConfirm(COMMITMENT);
-        console.log(`   Signature: ${signature1}\n`);
+            .prepare()
+            .sendAndConfirm();
+
+        console.log(`✅ Simple transaction successful! Signature: ${signature1}\n`);
     } catch (error) {
-        console.log(`❌ Simple transaction failed: ${error}\n`);
+        console.error('❌ Simple transaction failed:', error);
+        return;
     }
 
     // ========================================
-    // 6. TRANSACTION BUILDER - WITH COMPUTE ESTIMATION
+    // 6. TRANSACTION BUILDER - COMPUTE ESTIMATION
     // ========================================
-    console.log('=== TransactionBuilder - With Compute Estimation ===\n');
-
-    // Create another transfer
-    const transferInstruction2 = getTransferSolInstruction({
-        source: payerSigner,
-        destination: recipientSigner.address,
-        amount: 50_000_000, // 0.05 SOL
-    });
+    console.log('=== TransactionBuilder - Compute Estimation ===\n');
 
     // Build transaction with compute estimation
     console.log('Building transaction with compute estimation...');
-    const estimatedBuilder = TransactionBuilder.create(connection, {
+    const estimatedBuilder = connection.createTransaction({
         feePayer: payerSigner,
         computeLimit: 300_000, // Start with higher limit
         priorityFee: 5000n, // 5000 microlamports
     });
 
     try {
-        console.log('Config before prepare:', estimatedBuilder.getConfig());
+        const signature2 = await estimatedBuilder
+            .add(transferInstruction)
+            .prepare()
+            .sendAndConfirm();
 
-        await estimatedBuilder.add(transferInstruction2).prepare({
-            estimateCompute: true,
-            computeMargin: 0.15, // 15% margin
-        });
-
-        console.log('Config after prepare:', estimatedBuilder.getConfig());
-
-        const signature2 = await estimatedBuilder.sendAndConfirm('confirmed');
-
-        console.log(`✅ Estimated transaction confirmed!`);
-        console.log(`   Signature: ${signature2}\n`);
+        console.log(`✅ Estimated transaction successful! Signature: ${signature2}\n`);
     } catch (error) {
-        console.log(`❌ Estimated transaction failed: ${error}\n`);
+        console.error('❌ Estimated transaction failed:', error);
+        return;
     }
 
     // ========================================
-    // 7. TRANSACTION BUILDER - BATCH INSTRUCTIONS
+    // 7. TRANSACTION BUILDER - BATCH OPERATIONS
     // ========================================
-    console.log('=== TransactionBuilder - Batch Instructions ===\n');
+    console.log('=== TransactionBuilder - Batch Operations ===\n');
 
-    // Create multiple instructions
+    // Create multiple transfer instructions
     const batchInstructions = [
         getTransferSolInstruction({
             source: payerSigner,
             destination: recipientSigner.address,
-            amount: 25_000_000, // 0.025 SOL
+            amount: 50_000_000, // 0.05 SOL
         }),
         getTransferSolInstruction({
             source: payerSigner,
             destination: recipientSigner.address,
-            amount: 25_000_000, // 0.025 SOL
+            amount: 75_000_000, // 0.075 SOL
         }),
     ];
 
     console.log('Building batch transaction with compute estimation...');
-    const batchBuilder = TransactionBuilder.create(connection, {
+    const batchBuilder = connection.createTransaction({
         feePayer: payerSigner,
     });
 
     try {
-        await batchBuilder.addMany(batchInstructions).setComputeLimit(250_000).setPriorityFee(10_000n).prepare({
-            estimateCompute: true,
-            computeMargin: 0.2, // 20% margin for safety
-        });
+        const signature3 = await batchBuilder
+            .addMany(batchInstructions)
+            .prepare()
+            .sendAndConfirm();
 
-        const signature3 = await batchBuilder.sendAndConfirm('finalized'); // Wait for finalized
-
-        console.log(`✅ Batch transaction finalized!`);
-        console.log(`   Signature: ${signature3}`);
-        console.log(`   Instructions processed: ${batchBuilder.getInstructionCount()}\n`);
+        console.log(`✅ Batch transaction successful! Signature: ${signature3}\n`);
     } catch (error) {
-        console.log(`❌ Batch transaction failed: ${error}\n`);
+        console.error('❌ Batch transaction failed:', error);
+        return;
     }
 
     // ========================================
-    // 8. MANUAL TRANSACTION SENDING
+    // 8. MANUAL TRANSACTION BUILDING
     // ========================================
-    console.log('=== Manual Transaction Sending ===\n');
+    console.log('=== Manual Transaction Building ===\n');
 
     // Build transaction but sign and send manually
-    const manualBuilder = TransactionBuilder.create(connection, {
+    const manualBuilder = connection.createTransaction({
         feePayer: payerSigner,
     });
 
-    const transferInstruction3 = getTransferSolInstruction({
-        source: payerSigner,
-        destination: recipientSigner.address,
-        amount: 10_000_000, // 0.01 SOL
-    });
-
     try {
-        // Prepare the transaction
-        await manualBuilder.add(transferInstruction3).prepare({ estimateCompute: true, computeMargin: 0.1 });
+        const transaction = await manualBuilder
+            .add(transferInstruction)
+            .prepare()
+            .build();
 
-        // Sign manually
-        const signature = await manualBuilder.sign();
-        console.log('Transaction signed, signature:', signature);
+        const signature4 = await connection.sendTransaction(transaction);
+        console.log(`✅ Manual transaction sent! Signature: ${signature4}`);
 
-        // Could send with connection.sendAndConfirm if needed
-        console.log('✅ Manual signing successful\n');
+        // Wait for confirmation
+        await connection.confirmTransaction(signature4);
+        console.log('✅ Manual transaction confirmed!\n');
     } catch (error) {
-        console.log(`❌ Manual signing failed: ${error}\n`);
+        console.error('❌ Manual transaction failed:', error);
+        return;
     }
 
     // ========================================
-    // 9. COMMITMENT LEVELS DEMO
+    // 9. COMMITMENT LEVELS
     // ========================================
     console.log('=== Commitment Levels Demo ===\n');
 
-    const commitmentBuilder = TransactionBuilder.create(connection, {
+    const commitmentBuilder = connection.createTransaction({
         feePayer: payerSigner,
     });
 
-    const transferInstruction4 = getTransferSolInstruction({
-        source: payerSigner,
-        destination: recipientSigner.address,
-        amount: 5_000_000, // 0.005 SOL
-    });
-
     try {
-        // Test different commitment levels
-        console.log('Testing with "processed" commitment...');
-        await commitmentBuilder.reset().add(transferInstruction4).prepare({ estimateCompute: false });
+        const signature5 = await commitmentBuilder
+            .add(transferInstruction)
+            .prepare()
+            .sendAndConfirm({ commitment: 'finalized' });
 
-        const processedSig = await commitmentBuilder.sendAndConfirm('processed'); // Fast confirmation
-
-        console.log(`✅ Processed confirmation: ${processedSig}\n`);
+        console.log(`✅ Finalized transaction successful! Signature: ${signature5}\n`);
     } catch (error) {
-        console.log(`❌ Commitment test failed: ${error}\n`);
+        console.error('❌ Finalized transaction failed:', error);
+        return;
     }
 
     // ========================================

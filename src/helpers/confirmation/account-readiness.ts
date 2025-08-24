@@ -39,7 +39,7 @@ export async function waitForAccountReady(
             const accountInfo = await connection.getAccountInfo(address, { commitment });
 
             // Check if account exists (not null)
-            if (accountInfo.value !== null) {
+            if (accountInfo !== null) {
                 return; // Account is ready
             }
         } catch (error) {

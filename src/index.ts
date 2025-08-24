@@ -1,7 +1,7 @@
 // Main exports for Kit Lite SDK
 
 // Connection and RPC
-export { Connection, createKitLite } from './connection';
+export { createConnection, createKitLite, type Connection } from './connection';
 
 // Types
 export * from './types';

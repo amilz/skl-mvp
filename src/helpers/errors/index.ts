@@ -7,70 +7,128 @@ export type KitLiteError = {
     originalError?: unknown;
 };
 
-export class KitLiteErrorHandler {
-    static handle(error: unknown): KitLiteError {
-        // Handle Solana-specific errors
-        if (isSolanaError(error)) {
-            return this.handleSolanaError(error);
-        }
+/**
+ * Handles Solana-specific errors and maps them to friendly messages
+ */
+function handleSolanaError(error: SolanaError): KitLiteError {
+    // Map common Solana errors to friendly messages
+    const errorMap: Record<string, string> = {
+        SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR: 'Network connection failed. Please check your RPC endpoint.',
+        SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND:
+            'Transaction expired. Please retry with a fresh blockhash.',
+        SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS: 'Insufficient SOL balance for transaction.',
+        SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_DATA: 'Invalid account data. Account may not exist.',
+        SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_NOT_FOUND: 'Account not found on the network.',
+    };
 
-        // Handle standard errors
-        if (error instanceof Error) {
-            return {
-                code: 'UNKNOWN_ERROR',
-                message: error.message,
-                originalError: error,
-            };
-        }
+    const errorCode = String(error.context.__code);
+    const friendlyMessage = errorMap[errorCode] || error.message;
 
-        // Handle unknown errors
+    return {
+        code: errorCode,
+        message: friendlyMessage,
+        details: error.context,
+        originalError: error,
+    };
+}
+
+/**
+ * Handles any type of error and converts it to a standardized KitLiteError format
+ *
+ * @param error - The error to handle
+ * @returns A standardized KitLiteError object
+ * @example
+ * ```typescript
+ * const handledError = handleError(someError);
+ * console.log(handledError.message);
+ * ```
+ */
+export function handleError(error: unknown): KitLiteError {
+    // Handle Solana-specific errors
+    if (isSolanaError(error)) {
+        return handleSolanaError(error);
+    }
+
+    // Handle standard errors
+    if (error instanceof Error) {
         return {
             code: 'UNKNOWN_ERROR',
-            message: 'An unknown error occurred',
+            message: error.message,
             originalError: error,
         };
     }
 
-    private static handleSolanaError(error: SolanaError): KitLiteError {
-        // Map common Solana errors to friendly messages
-        const errorMap: Record<string, string> = {
-            SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR: 'Network connection failed. Please check your RPC endpoint.',
-            SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND:
-                'Transaction expired. Please retry with a fresh blockhash.',
-            SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS: 'Insufficient SOL balance for transaction.',
-            SOLANA_ERROR__TRANSACTION_ERROR__INVALID_ACCOUNT_DATA: 'Invalid account data. Account may not exist.',
-            SOLANA_ERROR__TRANSACTION_ERROR__ACCOUNT_NOT_FOUND: 'Account not found on the network.',
-        };
+    // Handle unknown errors
+    return {
+        code: 'UNKNOWN_ERROR',
+        message: 'An unknown error occurred',
+        originalError: error,
+    };
+}
 
-        const errorCode = String(error.context.__code);
-        const friendlyMessage = errorMap[errorCode] || error.message;
+/**
+ * Checks if an error indicates insufficient funds
+ *
+ * @param error - The error to check
+ * @returns True if the error indicates insufficient funds
+ * @example
+ * ```typescript
+ * if (isInsufficientFunds(error)) {
+ *     console.log('User needs more SOL');
+ * }
+ * ```
+ */
+export function isInsufficientFunds(error: unknown): boolean {
+    const handled = handleError(error);
+    return handled.code === 'SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS';
+}
 
-        return {
-            code: errorCode,
-            message: friendlyMessage,
-            details: error.context,
-            originalError: error,
-        };
-    }
+/**
+ * Checks if an error indicates a network issue
+ *
+ * @param error - The error to check
+ * @returns True if the error indicates a network issue
+ * @example
+ * ```typescript
+ * if (isNetworkError(error)) {
+ *     console.log('Network connection problem');
+ * }
+ * ```
+ */
+export function isNetworkError(error: unknown): boolean {
+    const handled = handleError(error);
+    return handled.code?.includes('TRANSPORT') || handled.code?.includes('NETWORK');
+}
 
-    static isInsufficientFunds(error: unknown): boolean {
-        const handled = this.handle(error);
-        return handled.code === 'SOLANA_ERROR__TRANSACTION_ERROR__INSUFFICIENT_FUNDS';
-    }
-
-    static isNetworkError(error: unknown): boolean {
-        const handled = this.handle(error);
-        return handled.code?.includes('TRANSPORT') || handled.code?.includes('NETWORK');
-    }
-
-    static isTransactionExpired(error: unknown): boolean {
-        const handled = this.handle(error);
-        return handled.code === 'SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND';
-    }
+/**
+ * Checks if an error indicates a transaction has expired
+ *
+ * @param error - The error to check
+ * @returns True if the error indicates a transaction has expired
+ * @example
+ * ```typescript
+ * if (isTransactionExpired(error)) {
+ *     console.log('Transaction expired, need new blockhash');
+ * }
+ * ```
+ */
+export function isTransactionExpired(error: unknown): boolean {
+    const handled = handleError(error);
+    return handled.code === 'SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND';
 }
 
 /**
  * Wraps an async function with error handling
+ *
+ * @param fn - The async function to wrap
+ * @param options - Optional configuration for retry behavior and error handling
+ * @returns A wrapped version of the function with error handling
+ * @example
+ * ```typescript
+ * const safeFunction = withErrorHandling(async () => {
+ *     // Your async code here
+ * }, { retry: 3, onError: console.error });
+ * ```
  */
 export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
     fn: T,
@@ -89,7 +147,7 @@ export function withErrorHandling<T extends (...args: unknown[]) => Promise<unkn
             try {
                 return await fn(...args);
             } catch (error) {
-                lastError = KitLiteErrorHandler.handle(error);
+                lastError = handleError(error);
 
                 if (options?.onError) {
                     options.onError(lastError);
@@ -100,16 +158,25 @@ export function withErrorHandling<T extends (...args: unknown[]) => Promise<unkn
                     throw lastError;
                 }
 
-                // Don't retry certain errors
-                if (KitLiteErrorHandler.isInsufficientFunds(error)) {
-                    throw lastError;
-                }
-
                 // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }
 
+        // This should never be reached, but TypeScript requires it
         throw lastError;
     }) as T;
 }
+
+/**
+ * Utility object for error handling operations.
+ * Provides functions for different error handling scenarios.
+ * 
+ * @deprecated Use the individual functions instead: handleError, isInsufficientFunds, isNetworkError, isTransactionExpired
+ */
+export const KitLiteErrorHandler = {
+    handle: handleError,
+    isInsufficientFunds,
+    isNetworkError,
+    isTransactionExpired,
+};

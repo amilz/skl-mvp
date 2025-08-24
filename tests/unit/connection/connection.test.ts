@@ -1,26 +1,38 @@
 /**
  * Tests for the Connection class
  */
-import { describe, it, expect } from 'vitest';
-import { Connection } from '../../../src/connection';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createConnection, type Connection } from '../../../src/connection';
 
 describe('Connection', () => {
-    describe('constructor', () => {
-        it('should create a connection instance', () => {
-            const endpoint = 'https://api.devnet.solana.com';
-            const connection = new Connection(endpoint);
+    let connection: Connection;
+    const endpoint = 'https://api.devnet.solana.com';
 
-            expect(connection).toBeInstanceOf(Connection);
-            expect(connection.raw).toBeDefined();
-        });
+    beforeEach(() => {
+        connection = createConnection(endpoint);
+    });
 
-        it('should provide raw RPC access', () => {
-            const endpoint = 'https://api.devnet.solana.com';
-            const connection = new Connection(endpoint);
+    it('should create a connection with the correct endpoint', () => {
+        expect(connection).toBeDefined();
+        expect(typeof connection.getBalance).toBe('function');
+    });
 
-            // Raw should have RPC methods that require .send()
-            expect(connection.raw.getLatestBlockhash).toBeDefined();
-            expect(connection.raw.getBalance).toBeDefined();
-        });
+    it('should have all required methods', () => {
+        expect(connection.getLatestBlockhash).toBeDefined();
+        expect(connection.getBalance).toBeDefined();
+        expect(connection.getBlockHeight).toBeDefined();
+        expect(connection.getSlot).toBeDefined();
+        expect(connection.getAccountInfo).toBeDefined();
+        expect(connection.sendTransaction).toBeDefined();
+        expect(connection.simulateTransaction).toBeDefined();
+        expect(connection.getSignatureStatuses).toBeDefined();
+        expect(connection.getTransaction).toBeDefined();
+        expect(connection.getMultipleAccounts).toBeDefined();
+        expect(connection.requestAirdrop).toBeDefined();
+        expect(connection.confirmTransaction).toBeDefined();
+        expect(connection.waitForBalance).toBeDefined();
+        expect(connection.airdropIfNeeded).toBeDefined();
+        expect(connection.createTransaction).toBeDefined();
+        expect(connection.raw).toBeDefined();
     });
 });

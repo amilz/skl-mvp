@@ -68,7 +68,7 @@ function createSignatureConfirmationPromise(
         const checkStatus = async () => {
             try {
                 const response = await connection.getSignatureStatuses([signature]);
-                const status = response.value[0];
+                const status = response[0];
 
                 if (!status) {
                     // Transaction not found yet, continue polling

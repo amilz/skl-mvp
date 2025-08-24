@@ -6,14 +6,14 @@
  * - Access to devnet/testnet (set TEST_RPC_ENDPOINT env var)
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Connection } from '../../src/connection';
+import { createConnection, type Connection } from '../../src/connection';
 import { TEST_RPC_ENDPOINT } from '../setup.integration';
 
 describe('Connection Integration Tests', () => {
     let connection: Connection;
 
     beforeAll(() => {
-        connection = new Connection(TEST_RPC_ENDPOINT);
+        connection = createConnection(TEST_RPC_ENDPOINT);
     });
 
     describe('getLatestBlockhash', () => {
